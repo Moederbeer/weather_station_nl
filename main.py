@@ -30,15 +30,16 @@ class weatherStation:
         self.rainFallLastHour = rainFallLastHour
         self.windDirectionDegrees = windDirectionDegrees
 
+    def getvaluefromkey(self, key):
+        return self.__getattribute__(key)
 
-def getWeatherData():
-    # webUrl = urllib.request.urlopen("https://data.buienradar.nl/2.0/feed/json")
-    jsonRaw = open('sample_json')
-    weatherData = json.load(jsonRaw)["actual"]
-    stations = []
 
-    for station in weatherData["stationmeasurements"]:
-        print(station["$id"])
+def getweatherdata():
+    # jsonraw = urllib.request.urlopen("https://data.buienradar.nl/2.0/feed/json")
+    jsonraw = open('sample_json')
+    weatherdata = json.load(jsonraw)["actual"]
+
+    for station in weatherdata["stationmeasurements"]:
         stations.append(weatherStation(station.get("$id", "na"),
                                        station.get("stationid", "na"),
                                        station.get("stationname", "na"),
@@ -63,9 +64,70 @@ def getWeatherData():
                                                    "na")))
 
 
+def templist():
+    templist = []
+    for i in range(0, len(stations)):
+        temp = stations[i].temperature
+        if temp == "na":
+            continue
+        else:
+            templist.append([float(stations[i].temperature), i])
+    return templist
+
+
+def getlist(key):
+    itemlist = []
+    for i in range(0, len(stations)):
+        stations.__contains__(key)
+        key.get
+        print()
+    return itemlist
+
+
+def windlist():
+    windlist = []
+    for i in range(0, len(stations)):
+        temp = stations[i].temperature
+        if temp == "na":
+            continue
+        else:
+            templist.append([float(stations[i].temperature), i])
+    return templist
+
+
+def gethottest():
+    return max(templist())
+
+
+def getcoldest():
+    return min(templist())
+
+
+def getsunniest():
+    pass
+
+
+def getmostwindiest():
+    pass
+
+
+def getleastwindiest():
+    pass
+
+
 def main():
-    getWeatherData()
 
+    getweatherdata()
 
+    hottest = gethottest()
+    coldest = getcoldest()
+    print(f"The temperature is currently highest at weather station: "
+          f"{stations[hottest[1]].stationName}, it's {hottest[0]} degrees "
+          f"there.")
+    print(f"The temperature is currently lowest at weather station: "
+          f"{stations[coldest[1]].stationName}, it's {coldest[0]} degrees "
+          f"there.")
+
+stations = []
 if __name__ == "__main__":
     main()
