@@ -64,43 +64,24 @@ def getweatherdata():
                                                    "na")))
 
 
-def templist():
-    templist = []
-    for i in range(0, len(stations)):
-        temp = stations[i].temperature
-        if temp == "na":
-            continue
-        else:
-            templist.append([float(stations[i].temperature), i])
-    return templist
-
-
-def getlist(key):
+def getvallist(keystr):  # gets all valid values from keystr with
+    # associated index
     itemlist = []
     for i in range(0, len(stations)):
-        stations.__contains__(key)
-        key.get
-        print()
+        for key, val in stations[i].__dict__.items():
+            if key.__contains__(keystr) and val != 'na':
+                itemlist.append([float(val), i])
+            else:
+                continue
     return itemlist
 
 
-def windlist():
-    windlist = []
-    for i in range(0, len(stations)):
-        temp = stations[i].temperature
-        if temp == "na":
-            continue
-        else:
-            templist.append([float(stations[i].temperature), i])
-    return templist
-
-
 def gethottest():
-    return max(templist())
+    return max(getvallist('temperature'))
 
 
 def getcoldest():
-    return min(templist())
+    return min(getvallist('temperature'))
 
 
 def getsunniest():
@@ -108,26 +89,39 @@ def getsunniest():
 
 
 def getmostwindiest():
-    pass
+    return max(getvallist('windSpeed'))
 
 
 def getleastwindiest():
-    pass
+    return min(getvallist('windSpeed'))
 
 
 def main():
 
     getweatherdata()
 
+    #print(getvallist('temperature'))
+
     hottest = gethottest()
     coldest = getcoldest()
+    windiest = getmostwindiest()
+    leastwindiest = getleastwindiest()
     print(f"The temperature is currently highest at weather station: "
           f"{stations[hottest[1]].stationName}, it's {hottest[0]} degrees "
           f"there.")
     print(f"The temperature is currently lowest at weather station: "
           f"{stations[coldest[1]].stationName}, it's {coldest[0]} degrees "
           f"there.")
+    print(f"The wind is currently highest at weather station: "
+          f"{stations[windiest[1]].stationName}, the wind speed is"
+          f" {windiest[0]} km/h "
+          f"there.")
+    print(f"The wind is currently lowest at weather station: "
+          f"{stations[leastwindiest[1]].stationName}, the wind speed is"
+          f" {leastwindiest[0]} km/h "
+          f"there.")
 
-stations = []
+
 if __name__ == "__main__":
+    stations = []
     main()
