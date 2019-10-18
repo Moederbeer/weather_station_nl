@@ -1,42 +1,46 @@
 import urllib.request
 import csv
 import json
+from datetime import datetime
 from tkinter import *
 from tkinter import ttk
 
 
-class weatherStation():
-    def __init__(self, id, stationId, stationName, lat, lon, region, timestamp,
-                 weatherDescription, windDirection, airPressure, temperature,
-                 groundTemperature, feelTemperature, windGusts, windSpeed,
-                 windSpeedBft, humidity, precipitation, sunPower,
-                 rainFallLast24Hour, rainFallLastHour, windDirectionDegrees):
-        self.id = id
-        self.stationId = stationId
-        self.stationName = stationName
+class WeatherStation():
+    def __init__(self, time, jsonid, stationid, stationname, lat, lon, region,
+                 timestamp, weatherdescription, winddirection, airpressure,
+                 temperature,
+                 groundtemperature, feeltemperature, windgusts, windspeed,
+                 windspeedbft, humidity, precipitation, sunpower,
+                 rainfalllast24hour, rainfalllasthour, winddirectiondegrees):
+        self.time = time
+        self.id = jsonid
+        self.stationId = stationid
+        self.stationName = stationname
         self.lat = lat
         self.lon = lon
         self.region = region
         self.timestamp = timestamp
-        self.weatherDescription = weatherDescription
-        self.airPressure = airPressure
-        self.windDirection = windDirection
+        self.weatherDescription = weatherdescription
+        self.airPressure = airpressure
+        self.windDirection = winddirection
         self.temperature = temperature
-        self.groundTemperature = groundTemperature
-        self.feelTemperature = feelTemperature
-        self.windGusts = windGusts
-        self.windSpeed = windSpeed
-        self.windSpeedBft = windSpeedBft
+        self.groundTemperature = groundtemperature
+        self.feelTemperature = feeltemperature
+        self.windGusts = windgusts
+        self.windSpeed = windspeed
+        self.windSpeedBft = windspeedbft
         self.humidity = humidity
         self.precipitation = precipitation
-        self.sunPower = sunPower
-        self.rainFallLast24Hour = rainFallLast24Hour
-        self.rainFallLastHour = rainFallLastHour
-        self.windDirectionDegrees = windDirectionDegrees
+        self.sunPower = sunpower
+        self.rainFallLast24Hour = rainfalllast24hour
+        self.rainFallLastHour = rainfalllasthour
+        self.windDirectionDegrees = winddirectiondegrees
 
     def writecsvrow(self):
         with open('weatherdata.csv', mode='a', newline='') as weatherfile:
-            fieldnames = ['id', 'temperature', 'airPressure', 'precipitation',
+            fieldnames = ['time', 'id', 'temperature', 'airPressure',
+                          'precipitation',
                           'sunPower', 'windSpeed']
             weather_writer = csv.DictWriter(weatherfile, fieldnames=fieldnames,
                                             delimiter=';',
@@ -47,14 +51,83 @@ class weatherStation():
         return
 
 
+class Window(Frame):
+    counter = 0
+
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.master = master
+        self.init_window()
+
+    def init_window(self):
+        # changing the title of our master widget
+        self.master.title("Weerstation")
+        # setting a grid
+        self.columnconfigure(0, pad=3)
+        self.columnconfigure(1, pad=3)
+        self.columnconfigure(2, pad=3)
+        self.columnconfigure(3, pad=3)
+
+        self.rowconfigure(0, pad=3)
+        self.rowconfigure(1, pad=3)
+        self.rowconfigure(2, pad=3)
+        self.rowconfigure(3, pad=3)
+        self.rowconfigure(4, pad=3)
+        # allowing the widget to take the full space of the root window
+        # self.pack(fill=BOTH, expand=1)
+
+        # create list of stations
+        self.tkvar = StringVar(self.master)
+        choices = getvallist("stationName", 1)
+        popupmenu = OptionMenu(root, self.tkvar, *choices,
+                               command=self.selected_station)
+        popupmenu.grid(row=0, column=1)
+
+        # creating a menu instance
+        menu = Menu(self.master)
+        self.master.config(menu=menu)
+        # create the file object)
+        file = Menu(menu, tearoff=False)
+        # adds a command to the menu option, calling it exit, and the
+        # command it runs on event is client_exit
+        file.add_command(label="Save", command=self.client_exit)
+        file.add_command(label="Open", command=self.client_exit)
+        file.add_command(label="Exit", command=self.client_exit)
+        # added "file" to our menu
+        menu.add_cascade(label="File", menu=file)
+        # create the file object)
+        edit = Menu(menu, tearoff=False)
+        # adds a command to the menu option, calling it exit, and the
+        # command it runs on event is client_exit
+        edit.add_command(label="About", command=self.about_window)
+        # added "file" to our menu
+        menu.add_cascade(label="Help", menu=edit)
+        # creating a button instance
+        quitbutton = Button(self, text="Exit", command=self.client_exit)
+        # placing the button on my window
+        quitbutton.grid(row=2, column=2)
+
+    def client_exit(self):
+        exit()
+
+    def about_window(self):
+        sub = Toplevel()
+        sub.title("About")
+        sub.geometry("320x240")
+
+    def selected_station(self, value):
+        print(value)
+
 def getweatherdata():
     # jsonraw = urllib.request.urlopen(
     # "https://data.buienradar.nl/2.0/feed/json")
     jsonraw = open('sample_json')
     weatherdata = json.load(jsonraw)["actual"]
+    time = datetime.now()
 
     for station in weatherdata["stationmeasurements"]:
-        stations.append(weatherStation(station.get("$id", "na"),
+        stations.append(WeatherStation(time,
+                                       station.get("$id", "na"),
                                        station.get("stationid", "na"),
                                        station.get("stationname", "na"),
                                        station.get("lat", "na"),
@@ -79,8 +152,12 @@ def getweatherdata():
                                                    "na")))
 
 
+def changed():
+    print("changed")
+
+
 # gets all valid values from keystr with associated index
-def getvallist(keystr):
+def getvallist(keystr, size=2):
     itemlist = []
     # go through all stations
     for i in range(0, len(stations)):
@@ -88,12 +165,30 @@ def getvallist(keystr):
         for key, val in stations[i].__dict__.items():
             # find desired key from keys
             if key.__contains__(keystr) and val != 'na':
-                # append value and id to list if not 'na'
-                itemlist.append([float(val), i])
+                if size == 1:
+                    if is_number(val):
+                        # append value and id to list if not 'na'
+                        itemlist.append(float(val))
+                    else:
+                        itemlist.append(val)
+                else:
+                    if is_number(val):
+                        # append value and id to list if not 'na'
+                        itemlist.append([float(val), i])
+                    else:
+                        itemlist.append([val, i])
             else:
                 # don't do anything fi value = 'na'
                 continue
     return itemlist
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 
 def writecsv():
@@ -148,12 +243,15 @@ def main():
           f"{stations[sunniest[1]].stationName}, the sunpower is "
           f"{sunniest[0]} watts per square meter there.")
 
-
+    print(getvallist("stationName", 1))
 
     writecsv()
 
 
 if __name__ == "__main__":
-    root = Tk()
     stations = []
     main()
+    root = Tk()
+    app = Window(root)
+    root.geometry('1000x750')
+    root.mainloop()
