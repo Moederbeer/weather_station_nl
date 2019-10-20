@@ -117,10 +117,16 @@ class Window(Frame):
 
     def selected_station(self, value):
         print(value)
+        # get the id of the chosen station
+        for i in range(0, len(stations)):
+            for k, v in stations[i].__dict__.items():
+                if k == "stationName" and v == value:
+                    print(stations[i].id)
+
 
 def getweatherdata():
-    # jsonraw = urllib.request.urlopen(
-    # "https://data.buienradar.nl/2.0/feed/json")
+    #jsonraw = urllib.request.urlopen(
+        #"https://data.buienradar.nl/2.0/feed/json")
     jsonraw = open('sample_json')
     weatherdata = json.load(jsonraw)["actual"]
     time = datetime.now()
