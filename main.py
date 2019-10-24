@@ -53,6 +53,7 @@ class WeatherStation():
 
 class Window(Frame):
     counter = 0
+    selectedstation = 0
 
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -63,25 +64,33 @@ class Window(Frame):
         # changing the title of our master widget
         self.master.title("Weerstation")
         # setting a grid
-        self.columnconfigure(0, pad=3)
-        self.columnconfigure(1, pad=3)
-        self.columnconfigure(2, pad=3)
-        self.columnconfigure(3, pad=3)
 
-        self.rowconfigure(0, pad=3)
-        self.rowconfigure(1, pad=3)
-        self.rowconfigure(2, pad=3)
-        self.rowconfigure(3, pad=3)
-        self.rowconfigure(4, pad=3)
+        left_frame = Frame(root, bg='cyan', width=450, height=500, pady=3)
+        left_frame.grid(sticky=NS)
+        left_frame.columnconfigure(0, minsize=200)
+
         # allowing the widget to take the full space of the root window
         # self.pack(fill=BOTH, expand=1)
 
         # create list of stations
         self.tkvar = StringVar(self.master)
+        # set choices of popupmenu
         choices = getvallist("stationName", 1)
-        popupmenu = OptionMenu(root, self.tkvar, *choices,
+        # set default menuitem
+        self.tkvar.set(choices[0])
+        # make a popupmenu
+        popupmenu = OptionMenu(left_frame, self.tkvar, *choices,
                                command=self.selected_station)
-        popupmenu.grid(row=0, column=1)
+        # place it in the grid
+        popupmenu.grid(sticky=EW)
+
+        mintmplbl = Label(left_frame, text="Koudste: "+str(getcoldest()[0]))
+        mintmplbl.grid(sticky=EW)
+
+        # creating a button instance
+        quitbutton = Button(left_frame, text="Exit", command=self.client_exit)
+        # placing the button on my window
+        quitbutton.grid(sticky=SW)
 
         # creating a menu instance
         menu = Menu(self.master)
@@ -102,10 +111,9 @@ class Window(Frame):
         edit.add_command(label="About", command=self.about_window)
         # added "file" to our menu
         menu.add_cascade(label="Help", menu=edit)
-        # creating a button instance
-        quitbutton = Button(self, text="Exit", command=self.client_exit)
-        # placing the button on my window
-        quitbutton.grid(row=2, column=2)
+
+
+        # self.pack(fill=BOTH, expand=1)
 
     def client_exit(self):
         exit()
@@ -117,11 +125,11 @@ class Window(Frame):
 
     def selected_station(self, value):
         print(value)
-        # get the id of the chosen station
+        # get the id of the chosen station and set this as selectedstation
         for i in range(0, len(stations)):
             for k, v in stations[i].__dict__.items():
                 if k == "stationName" and v == value:
-                    print(stations[i].id)
+                    self.selectedstation = stations[i].id
 
 
 def getweatherdata():
@@ -261,3 +269,4 @@ if __name__ == "__main__":
     app = Window(root)
     root.geometry('1000x750')
     root.mainloop()
+    print()
