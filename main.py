@@ -54,6 +54,8 @@ class WeatherStation():
 class Window(Frame):
     counter = 0
     selectedstation = 0
+    hottest = []
+    coldest = []
 
     def __init__(self, master=None):
         Frame.__init__(self, master)
@@ -83,10 +85,17 @@ class Window(Frame):
                                command=self.selected_station)
         # place it in the grid
         popupmenu.grid(sticky=EW)
+        coldest = getcoldest()
+        hottest = gethottest()
+        windiest = getmostwindiest()
+        leastwindiest = getleastwindiest()
+        sunniest = getsunniest()
 
-        mintmplbl = Label(left_frame, text="Koudste: "+str(getcoldest()[0]))
-        mintmplbl.grid(sticky=EW)
+        Label(left_frame, text="Koudste: "+str(coldest[0])).grid(sticky=EW)
+        Label(left_frame, text=coldest[2]).grid(sticky=EW)
 
+        Label(left_frame, text="Heetste: "+str(hottest[0])).grid(sticky=EW)
+        Label(left_frame, text=hottest[2]).grid(sticky=EW)
         # creating a button instance
         quitbutton = Button(left_frame, text="Exit", command=self.client_exit)
         # placing the button on my window
@@ -171,7 +180,7 @@ def changed():
 
 
 # gets all valid values from keystr with associated index
-def getvallist(keystr, size=2):
+def getvallist(keystr, size=3):
     itemlist = []
     # go through all stations
     for i in range(0, len(stations)):
@@ -185,6 +194,14 @@ def getvallist(keystr, size=2):
                         itemlist.append(float(val))
                     else:
                         itemlist.append(val)
+                elif size == 3:
+                    if is_number(val):
+                        # append value id and name to list if not 'na'
+                        itemlist.append([float(val), i, stations[
+                            i].__dict__.get("stationName")])
+                    else:
+                        itemlist.append([val, i, stations[i].__dict__.get(
+                            "stationName")])
                 else:
                     if is_number(val):
                         # append value and id to list if not 'na'
@@ -192,7 +209,7 @@ def getvallist(keystr, size=2):
                     else:
                         itemlist.append([val, i])
             else:
-                # don't do anything fi value = 'na'
+                # don't do anything if value = 'na'
                 continue
     return itemlist
 
@@ -236,28 +253,28 @@ def main():
 
     # print(getvallist('temperature'))
 
-    hottest = gethottest()
-    coldest = getcoldest()
-    windiest = getmostwindiest()
-    leastwindiest = getleastwindiest()
-    sunniest = getsunniest()
-    print(f"The temperature is currently highest at weather station: "
-          f"{stations[hottest[1]].stationName}, it's {hottest[0]} degrees "
-          f"there.")
-    print(
-        f"The temperature is currently lowest at weather station: {stations[coldest[1]].stationName}, it's {coldest[0]} degrees there.")
-    print(
-        f"The wind is currently highest at weather station: {stations[windiest[1]].stationName}, the wind speed is {windiest[0]} km/h "
-        f"there.")
-    print(f"The wind is currently lowest at weather station: "
-          f"{stations[leastwindiest[1]].stationName}, the wind speed is"
-          f" {leastwindiest[0]} km/h "
-          f"there.")
-    print(f"The sunpower is currently highest at weather station: "
-          f"{stations[sunniest[1]].stationName}, the sunpower is "
-          f"{sunniest[0]} watts per square meter there.")
-
-    print(getvallist("stationName", 1))
+    # hottest = gethottest()
+    # coldest = getcoldest()
+    # windiest = getmostwindiest()
+    # leastwindiest = getleastwindiest()
+    # sunniest = getsunniest()
+    # print(f"The temperature is currently highest at weather station: "
+    #       f"{stations[hottest[1]].stationName}, it's {hottest[0]} degrees "
+    #       f"there.")
+    # print(
+    #     f"The temperature is currently lowest at weather station: {stations[coldest[1]].stationName}, it's {coldest[0]} degrees there.")
+    # print(
+    #     f"The wind is currently highest at weather station: {stations[windiest[1]].stationName}, the wind speed is {windiest[0]} km/h "
+    #     f"there.")
+    # print(f"The wind is currently lowest at weather station: "
+    #       f"{stations[leastwindiest[1]].stationName}, the wind speed is"
+    #       f" {leastwindiest[0]} km/h "
+    #       f"there.")
+    # print(f"The sunpower is currently highest at weather station: "
+    #       f"{stations[sunniest[1]].stationName}, the sunpower is "
+    #       f"{sunniest[0]} watts per square meter there.")
+    #
+    # print(getvallist("stationName", 1))
 
     writecsv()
 
