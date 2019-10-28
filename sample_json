@@ -23,7 +23,7 @@
         "iconurl": "https://www.buienradar.nl/resources/images/icons/weather/30x30/c.png",
         "graphUrl": "https://www.buienradar.nl/nederland/weerbericht/weergrafieken/c",
         "winddirection": "ZW",
-        "temperature": 13.3,
+        "temperature": 13.5,
         "groundtemperature": 13,
         "feeltemperature": 12.2,
         "windgusts": 9.3,

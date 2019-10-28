@@ -2,8 +2,16 @@ import urllib.request
 import csv
 import json
 from datetime import datetime
+import time
 from tkinter import *
 from tkinter import ttk
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+# Implement the default Matplotlib key bindings.
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
+
+import numpy as np
 
 
 class WeatherStation():
@@ -62,100 +70,226 @@ class Window(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.master = master
+
+        self.callback = None
+
+        self.updatetime = 10 * 1000
+
+        self.coldest = getcoldest()
+        self.hottest = gethottest()
+        self.windiest = getmostwindiest()
+        self.leastwindiest = getleastwindiest()
+        self.sunniest = getsunniest()
+
+        self.hottestlbl0 = StringVar()
+        self.coldestlbl0 = StringVar()
+        self.windiestlbl0 = StringVar()
+        self.leastwindiestlbl0 = StringVar()
+        self.sunniestlbl0 = StringVar()
+
+        self.hottestlbl1 = StringVar()
+        self.coldestlbl1 = StringVar()
+        self.windiestlbl1 = StringVar()
+        self.leastwindiestlbl1 = StringVar()
+        self.sunniestlbl1 = StringVar()
+
+        self.weatherlbl = StringVar()
+        self.visibilitylbl = StringVar()
+        self.temperaturelbl = StringVar()
+        self.pressurelbl = StringVar()
+        self.sunpowerlbl = StringVar()
+        self.rainlbl = StringVar()
+        self.winddirectionlbl = StringVar()
+        self.windspeedlbl = StringVar()
+        self.windgustslbl = StringVar()
+
         self.init_window()
+
+    def left_frame_data(self):
+        self.coldest = getcoldest()
+        self.hottest = gethottest()
+        self.windiest = getmostwindiest()
+        self.leastwindiest = getleastwindiest()
+        self.sunniest = getsunniest()
+
+        self.coldestlbl0.set(f"Koudste: {self.coldest[0]}°C")
+        self.hottestlbl0.set(f"Heetste: {self.hottest[0]}°C")
+        self.windiestlbl0.set(f"Max wind: {self.windiest[0]} Km/h")
+        self.leastwindiestlbl0.set(f"Min wind: {self.leastwindiest[0]} Km/h")
+        self.sunniestlbl0.set(f"Zonnigst: {self.sunniest[0]} W/m²")
+
+        self.coldestlbl1.set(self.coldest[2])
+        self.hottestlbl1.set(self.hottest[2])
+        self.windiestlbl1.set(self.windiest[2])
+        self.leastwindiestlbl1.set(self.leastwindiest[2])
+        self.sunniestlbl1.set(self.sunniest[2])
+
+    def right_frame_data(self):
+        self.weatherlbl.set(f"{stations[self.selectedstation].weatherDescription}")
+        self.visibilitylbl.set(f"{stations[self.selectedstation].visibility}")
+        self.temperaturelbl.set(f"{stations[self.selectedstation].temperature}")
+        self.pressurelbl.set(f"{stations[self.selectedstation].airPressure}")
+        self.sunpowerlbl.set(f"{stations[self.selectedstation].sunPower}")
+        self.rainlbl.set(f"{stations[self.selectedstation].rainFallLastHour}")
+        self.winddirectionlbl.set(f"{stations[self.selectedstation].windDirection}")
+        self.windspeedlbl.set(f"{stations[self.selectedstation].windSpeed}")
+        self.windgustslbl.set(f"{stations[self.selectedstation].windGusts}")
+
 
     def init_window(self):
         # changing the title of the master window
         self.master.title("Weerstation")
         # setting a grid
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_columnconfigure(0, weight=0)
+        root.grid_columnconfigure(1, weight=1)
 
-        left_frame = Frame(root, bg='cyan', width=450, height=500, pady=3)
-        left_frame.grid(sticky=NS)
-        left_frame.columnconfigure(0, minsize=200)
+        left_frame = Frame(root, bg='cyan', width=200, pady=3)
+        left_frame.grid(column=0, row=0, sticky=E+W+N+S)
+        left_frame.columnconfigure(0, minsize=200, weight=0)
 
-        # allowing the widget to take the full space of the root window
-        # self.pack(fill=BOTH, expand=1)
+        left_frame.rowconfigure(0, weight=1)
+        left_frame.rowconfigure(16, weight=1)
+
+        right_frame = Frame(root, bg='red', width=450, height=500, pady=3)
+        right_frame.rowconfigure(0, weight=1)
+        right_frame.grid(column=1, row=0, sticky=E+W+N+S)
+        right_frame.columnconfigure(0, weight=1)
+        right_frame.columnconfigure(1, weight=1)
+        right_frame.columnconfigure(2, weight=1)
+        right_frame.columnconfigure(3, weight=1)
+        right_frame.columnconfigure(4, weight=1)
+        right_frame.columnconfigure(5, weight=1)
+        right_frame.columnconfigure(6, weight=1)
+        right_frame.columnconfigure(7, weight=1)
+        right_frame.columnconfigure(8, weight=1)
 
         # create list of stations
-        self.tkvar = StringVar(self.master)
+        self.tkvar1 = StringVar(self.master)
         # set choices of popupmenu
-        choices = getvallist("stationName", 1)
+        stationchoices = getvallist("stationName", 1)
         # set default menuitem
-        self.tkvar.set(choices[0])
+        self.tkvar1.set(stationchoices[0])
         # make a popupmenu
-        popupmenu = OptionMenu(left_frame, self.tkvar, *choices,
+        popupmenu = OptionMenu(left_frame, self.tkvar1, *stationchoices,
                                command=self.selected_station)
         # place it in the grid
-        popupmenu.grid(sticky=EW)
+        popupmenu.grid(sticky=N+E+W)
 
-        # selected station data
-        # weather description, visibility, temperature, air pressure,
-        # sun power, rain, wind-direction/power/gusts
-        Label(left_frame, text=stations[
-            self.selectedstation].weatherDescription, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].visibility, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].temperature, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].airPressure, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].sunPower, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].rainFallLastHour, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].windDirection, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].windSpeed, anchor=W).grid(
-            sticky=EW)
-        Label(left_frame, text=stations[
-            self.selectedstation].windGusts, anchor=W).grid(
-            sticky=EW)
-
-
+        self.tkvar2 = StringVar(self.master)
+        timechoices = ["10s", "30s", "60s", "10min"]
+        self.tkvar2.set(timechoices[0])
+        # make a popupmenu
+        popupmenu = OptionMenu(left_frame, self.tkvar2, *timechoices,
+                               command=self.selected_timer)
+        # place it in the grid
+        popupmenu.grid(sticky=N + E + W)
 
         # show assignment data of other stations
-        coldest = getcoldest()
-        hottest = gethottest()
-        windiest = getmostwindiest()
-        leastwindiest = getleastwindiest()
-        sunniest = getsunniest()
+        self.coldestlbl0.set(f"Koudste: {self.coldest[0]}°C")
+        self.hottestlbl0.set(f"Heetste: {self.hottest[0]}°C")
+        self.windiestlbl0.set(f"Max wind: {self.windiest[0]} Km/h")
+        self.leastwindiestlbl0.set(f"Min wind: {self.leastwindiest[0]} Km/h")
+        self.sunniestlbl0.set(f"Zonnigst: {self.sunniest[0]} W/m²")
 
-        Label(left_frame, text=f"Koudste: {coldest[0]}°C", anchor=W).grid(
+        self.coldestlbl1.set(self.coldest[2])
+        self.hottestlbl1.set(self.hottest[2])
+        self.windiestlbl1.set(self.windiest[2])
+        self.leastwindiestlbl1.set(self.leastwindiest[2])
+        self.sunniestlbl1.set(self.sunniest[2])
+
+        Label(left_frame, textvariable=self.coldestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text=coldest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, textvariable=self.coldestlbl1, anchor=W).grid(
+            sticky=EW)
         Label(left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, text=f"Heetste: {hottest[0]}°C", anchor=W).grid(
+        Label(left_frame, textvariable=self.hottestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text=hottest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, textvariable=self.hottestlbl1, anchor=W).grid(
+            sticky=EW)
         Label(left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, text=f"Max wind: {windiest[0]} Km/h", anchor=W).grid(
+        Label(left_frame, textvariable=self.windiestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text=windiest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, textvariable=self.windiestlbl1, anchor=W).grid(
+            sticky=EW)
         Label(left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, text=f"Min wind: {leastwindiest[0]} Km/h",
+        Label(left_frame, textvariable=self.leastwindiestlbl0,
               anchor=W).grid(sticky=EW)
-        Label(left_frame, text=leastwindiest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, textvariable=self.leastwindiestlbl1, anchor=W).grid(
+            sticky=EW)
         Label(left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, text=f"Zonnigst: {sunniest[0]} W/m²",
+        Label(left_frame, textvariable=self.sunniestlbl0,
               anchor=W).grid(sticky=EW)
-        Label(left_frame, text=sunniest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, textvariable=self.sunniestlbl1, anchor=W).grid(
+            sticky=EW)
+
+        # Label(root, textvariable=self.test).grid(sticky=EW)
+
+        # self.test.set("hoi")
 
         # creating a button instance
         quitbutton = Button(left_frame, text="Exit", command=self.client_exit)
         # placing the button on my window
         quitbutton.grid(sticky=SW)
+
+        # matplotlib graph
+        fig = Figure(figsize=(20, 10), dpi=100)
+        t = np.arange(0, 3, .01)
+        fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+
+        canvas = FigureCanvasTkAgg(fig, master=right_frame)  # A tk.DrawingArea.
+        canvas.draw()
+        canvas.get_tk_widget().grid(column=0, row=0, columnspan=9)
+
+        # selected station data
+        # weather description, visibility, temperature, air pressure,
+        # sun power, rain, wind-direction/power/gusts
+        Label(right_frame, text="Huidig weer:").grid(column=0, row=1)
+        Label(right_frame, textvariable=self.weatherlbl).grid(
+            column=0, row=2)
+
+        Label(right_frame, text="Zicht:").grid(column=1, row=1)
+        Label(right_frame, textvariable=self.visibilitylbl, anchor=W).grid(
+            column=1,
+            row=2)
+
+        Label(right_frame, text="Temperatuur:").grid(column=2, row=1)
+        Label(right_frame, textvariable=self.temperaturelbl, anchor=W).grid(
+            column=2,
+            row=2)
+
+        Label(right_frame, text="Luchtdruk:").grid(column=3, row=1)
+        Label(right_frame, textvariable=self.pressurelbl, anchor=W).grid(
+            column=3,
+            row=2)
+
+        Label(right_frame, text="Zonnekracht:").grid(column=4, row=1)
+        Label(right_frame, textvariable=self.sunpowerlbl, anchor=W).grid(
+            column=4,
+            row=2)
+
+        Label(right_frame, text="Regen laatste uur:").grid(column=5, row=1)
+        Label(right_frame, textvariable=self.rainlbl, anchor=W).grid(column=5,
+                                                                     row=2)
+
+        Label(right_frame, text="Windrichting:").grid(column=6, row=1)
+        Label(right_frame, textvariable=self.winddirectionlbl, anchor=W).grid(
+            column=6,
+            row=2)
+
+        Label(right_frame, text="Windsnelheid:").grid(column=7, row=1)
+        Label(right_frame, textvariable=self.windspeedlbl, anchor=W).grid(
+            column=7,
+            row=2)
+
+        Label(right_frame, text="Windstoten:").grid(column=8, row=1)
+        Label(right_frame, textvariable=self.windgustslbl, anchor=W).grid(
+            column=8,
+            row=2)
 
         # creating a menu instance
         menu = Menu(self.master)
@@ -177,8 +311,8 @@ class Window(Frame):
         # added "file" to our menu
         menu.add_cascade(label="Help", menu=edit)
 
-
-        # self.pack(fill=BOTH, expand=1)
+        # start timed updater
+        self.onupdate()
 
     def client_exit(self):
         exit()
@@ -194,15 +328,47 @@ class Window(Frame):
         for i in range(0, len(stations)):
             for k, v in stations[i].__dict__.items():
                 if k == "stationName" and v == value:
-                    self.selectedstation = stations[i].id
+                    self.selectedstation = i
+        self.right_frame_data()
+
+    def selected_timer(self, value):
+        # cancel te last timer because a new interval is set
+        root.after_cancel(self.callback)
+        # compare input to needed output
+        if value == "10s":
+            self.updatetime = 10 * 1000
+        elif value == "30s":
+            self.updatetime = 30 * 1000
+        elif value == "60s":
+            self.updatetime = 60 * 1000
+        elif value == "10min":
+            self.updatetime = 10 * 60 * 1000
+        # run the onupdate function with new interval
+        self.onupdate()
+
+    def current_iso8601(self):
+        return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+
+    def onupdate(self):
+        # update displayed time
+        print("new data")
+        getweatherdata()
+        self.left_frame_data()
+        self.right_frame_data()
+        # schedule update timer with callback to cancel
+        self.callback = self.after(self.updatetime, self.onupdate)
 
 
 def getweatherdata():
-    #jsonraw = urllib.request.urlopen(
-        #"https://data.buienradar.nl/2.0/feed/json")
+    # load json file
+    # jsonraw = urllib.request.urlopen(
+        # "https://data.buienradar.nl/2.0/feed/json")
     jsonraw = open('sample_json')
     weatherdata = json.load(jsonraw)["actual"]
+    # create a timestamp
     time = datetime.now()
+    # clear data so there is room for fresh data
+    stations.clear()
 
     for station in weatherdata["stationmeasurements"]:
         stations.append(WeatherStation(time,
@@ -306,41 +472,14 @@ def getleastwindiest():
 
 
 def main():
-    getweatherdata()
-
-    # print(getvallist('temperature'))
-
-    # hottest = gethottest()
-    # coldest = getcoldest()
-    # windiest = getmostwindiest()
-    # leastwindiest = getleastwindiest()
-    # sunniest = getsunniest()
-    # print(f"The temperature is currently highest at weather station: "
-    #       f"{stations[hottest[1]].stationName}, it's {hottest[0]} degrees "
-    #       f"there.")
-    # print(
-    #     f"The temperature is currently lowest at weather station: {stations[coldest[1]].stationName}, it's {coldest[0]} degrees there.")
-    # print(
-    #     f"The wind is currently highest at weather station: {stations[windiest[1]].stationName}, the wind speed is {windiest[0]} km/h "
-    #     f"there.")
-    # print(f"The wind is currently lowest at weather station: "
-    #       f"{stations[leastwindiest[1]].stationName}, the wind speed is"
-    #       f" {leastwindiest[0]} km/h "
-    #       f"there.")
-    # print(f"The sunpower is currently highest at weather station: "
-    #       f"{stations[sunniest[1]].stationName}, the sunpower is "
-    #       f"{sunniest[0]} watts per square meter there.")
-    #
-    # print(getvallist("stationName", 1))
-
-    # writecsv()
+    pass
 
 
 if __name__ == "__main__":
     stations = []
+    getweatherdata()
     main()
     root = Tk()
     app = Window(root)
     root.geometry('1000x750')
     root.mainloop()
-    print()
