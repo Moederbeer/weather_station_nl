@@ -10,7 +10,8 @@ class WeatherStation():
     def __init__(self, time, jsonid, stationid, stationname, lat, lon, region,
                  timestamp, weatherdescription, winddirection, airpressure,
                  temperature,
-                 groundtemperature, feeltemperature, windgusts, windspeed,
+                 groundtemperature, feeltemperature, visibility, windgusts,
+                 windspeed,
                  windspeedbft, humidity, precipitation, sunpower,
                  rainfalllast24hour, rainfalllasthour, winddirectiondegrees):
         self.time = time
@@ -27,6 +28,7 @@ class WeatherStation():
         self.temperature = temperature
         self.groundTemperature = groundtemperature
         self.feelTemperature = feeltemperature
+        self.visibility = visibility
         self.windGusts = windgusts
         self.windSpeed = windspeed
         self.windSpeedBft = windspeedbft
@@ -53,7 +55,7 @@ class WeatherStation():
 
 class Window(Frame):
     counter = 0
-    selectedstation = 0
+    selectedstation = 1
     hottest = []
     coldest = []
 
@@ -63,7 +65,7 @@ class Window(Frame):
         self.init_window()
 
     def init_window(self):
-        # changing the title of our master widget
+        # changing the title of the master window
         self.master.title("Weerstation")
         # setting a grid
 
@@ -85,17 +87,71 @@ class Window(Frame):
                                command=self.selected_station)
         # place it in the grid
         popupmenu.grid(sticky=EW)
+
+        # selected station data
+        # weather description, visibility, temperature, air pressure,
+        # sun power, rain, wind-direction/power/gusts
+        Label(left_frame, text=stations[
+            self.selectedstation].weatherDescription, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].visibility, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].temperature, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].airPressure, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].sunPower, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].rainFallLastHour, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].windDirection, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].windSpeed, anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=stations[
+            self.selectedstation].windGusts, anchor=W).grid(
+            sticky=EW)
+
+
+
+        # show assignment data of other stations
         coldest = getcoldest()
         hottest = gethottest()
         windiest = getmostwindiest()
         leastwindiest = getleastwindiest()
         sunniest = getsunniest()
 
-        Label(left_frame, text="Koudste: "+str(coldest[0])).grid(sticky=EW)
-        Label(left_frame, text=coldest[2]).grid(sticky=EW)
+        Label(left_frame, text=f"Koudste: {coldest[0]}°C", anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=coldest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, text="Heetste: "+str(hottest[0])).grid(sticky=EW)
-        Label(left_frame, text=hottest[2]).grid(sticky=EW)
+        Label(left_frame, text=f"Heetste: {hottest[0]}°C", anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=hottest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, text="").grid(sticky=EW)
+
+        Label(left_frame, text=f"Max wind: {windiest[0]} Km/h", anchor=W).grid(
+            sticky=EW)
+        Label(left_frame, text=windiest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, text="").grid(sticky=EW)
+
+        Label(left_frame, text=f"Min wind: {leastwindiest[0]} Km/h",
+              anchor=W).grid(sticky=EW)
+        Label(left_frame, text=leastwindiest[2], anchor=W).grid(sticky=EW)
+        Label(left_frame, text="").grid(sticky=EW)
+
+        Label(left_frame, text=f"Zonnigst: {sunniest[0]} W/m²",
+              anchor=W).grid(sticky=EW)
+        Label(left_frame, text=sunniest[2], anchor=W).grid(sticky=EW)
+
         # creating a button instance
         quitbutton = Button(left_frame, text="Exit", command=self.client_exit)
         # placing the button on my window
@@ -156,13 +212,14 @@ def getweatherdata():
                                        station.get("lat", "na"),
                                        station.get("lon", "na"),
                                        station.get("regio", "na"),
-                                       station.get("weatherdescription", "na"),
                                        station.get("timestamp", "na"),
+                                       station.get("weatherdescription", "na"),
                                        station.get("winddirection", "na"),
                                        station.get("airpressure", "na"),
                                        station.get("temperature", "na"),
                                        station.get("groundtemperature", "na"),
                                        station.get("feeltemperature", "na"),
+                                       station.get("visibility", "na"),
                                        station.get("windgusts", "na"),
                                        station.get("windspeed", "na"),
                                        station.get("windspeedBft", "na"),
@@ -276,7 +333,7 @@ def main():
     #
     # print(getvallist("stationName", 1))
 
-    writecsv()
+    # writecsv()
 
 
 if __name__ == "__main__":
