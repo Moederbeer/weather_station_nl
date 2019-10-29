@@ -10,12 +10,19 @@ from matplotlib.backends.backend_tkagg import (
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from matplotlib.transforms import Transform
+from matplotlib.ticker import (
+    AutoLocator, AutoMinorLocator)
+import os.path
+from os import path
 
 import numpy as np
 
 
 class WeatherStation():
-    def __init__(self, time, jsonid, stationid, stationname, lat, lon, region,
+    def __init__(self, time, index, jsonid, stationid, stationname, lat, lon,
+                 region,
                  timestamp, weatherdescription, winddirection, airpressure,
                  temperature,
                  groundtemperature, feeltemperature, visibility, windgusts,
@@ -23,6 +30,7 @@ class WeatherStation():
                  windspeedbft, humidity, precipitation, sunpower,
                  rainfalllast24hour, rainfalllasthour, winddirectiondegrees):
         self.time = time
+        self.index = index
         self.id = jsonid
         self.stationId = stationid
         self.stationName = stationname
@@ -49,7 +57,7 @@ class WeatherStation():
 
     def writecsvrow(self):
         with open('weatherdata.csv', mode='a', newline='') as weatherfile:
-            fieldnames = ['time', 'id', 'temperature', 'airPressure',
+            fieldnames = ['time', 'index', 'temperature', 'airPressure',
                           'precipitation',
                           'sunPower', 'windSpeed']
             weather_writer = csv.DictWriter(weatherfile, fieldnames=fieldnames,
@@ -63,7 +71,7 @@ class WeatherStation():
 
 class Window(Frame):
     counter = 0
-    selectedstation = 1
+    selectedstation = 0
     hottest = []
     coldest = []
 
@@ -72,6 +80,8 @@ class Window(Frame):
         self.master = master
 
         self.callback = None
+
+        self.canvas = None
 
         self.updatetime = 10 * 60 * 1000
 
@@ -181,6 +191,17 @@ class Window(Frame):
         right_frame.columnconfigure(7, weight=1)
         right_frame.columnconfigure(8, weight=1)
 
+        # matplotlib graph for temperature and pressure
+        fig, self.ax1 = plt.subplots()
+        fig.set_size_inches(15, 10)
+        self.ax2 = self.ax1.twinx()  # instantiate a second axes that shares
+        # the
+        # same x-axis
+        self.canvas = FigureCanvasTkAgg(fig, master=right_frame)
+        self.canvas.get_tk_widget().grid(column=0, row=0, columnspan=9)
+        # canvas.show()
+        self.draw_graph()
+
         # create list of stations
         self.tkvar1 = StringVar(self.master)
         # set choices of popupmenu
@@ -253,14 +274,7 @@ class Window(Frame):
         # placing the button on my window
         quitbutton.grid(sticky=SW)
 
-        # matplotlib graph
-        fig = Figure(figsize=(20, 10), dpi=100)
-        t = np.arange(0, 3, .01)
-        fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
 
-        canvas = FigureCanvasTkAgg(fig, master=right_frame)  # A tk.DrawingArea.
-        canvas.draw()
-        canvas.get_tk_widget().grid(column=0, row=0, columnspan=9)
 
         # selected station data
         # weather description, visibility, temperature, air pressure,
@@ -334,6 +348,34 @@ class Window(Frame):
     def client_exit(self):
         exit()
 
+    def draw_graph(self):
+        self.ax1.clear()
+        self.ax2.clear()
+        temperatures = []
+        pressures = []
+        timestamps = []
+        with open('weatherdata.csv', 'r') as weatherfile:
+            reader = csv.reader(weatherfile,    delimiter=';',
+                                                quotechar='"',
+                                                quoting=csv.QUOTE_MINIMAL)
+            for row in reader:
+                if int(row[1]) == self.selectedstation:
+                    timestamps.append(row[0])
+                    temperatures.append(row[2])
+                    pressures.append(row[3])
+
+        color = 'tab:red'
+        self.ax1.set_xlabel('Datum')
+        self.ax1.set_ylabel('°C', color=color)
+        self.ax1.plot(timestamps, temperatures, color=color)
+        self.ax1.tick_params(axis='y', labelcolor=color)
+
+        color = 'tab:blue'
+        self.ax2.set_ylabel('hPa', color=color)
+        self.ax2.plot(timestamps, pressures, color=color)
+        self.ax2.tick_params(axis='y', labelcolor=color)
+        self.canvas.draw()
+
     def about_window(self):
         sub = Toplevel()
         sub.title("About")
@@ -346,7 +388,9 @@ class Window(Frame):
             for k, v in stations[i].__dict__.items():
                 if k == "stationName" and v == value:
                     self.selectedstation = i
+                    print(i)
         self.right_frame_data()
+        self.draw_graph()
 
     def selected_timer(self, value):
         # cancel te last timer because a new interval is set
@@ -384,11 +428,14 @@ def getweatherdata():
     weatherdata = json.load(jsonraw)["actual"]
     # create a timestamp
     time = datetime.now()
+    timestamp = time.strftime("%b %d %Y %H:%M:%S")
     # clear data so there is room for fresh data
     stations.clear()
+    index = 0
 
     for station in weatherdata["stationmeasurements"]:
-        stations.append(WeatherStation(time,
+        stations.append(WeatherStation(timestamp,
+                                       index,
                                        station.get("$id", "na"),
                                        station.get("stationid", "na"),
                                        station.get("stationname", "na"),
@@ -413,6 +460,7 @@ def getweatherdata():
                                        station.get("rainFallLastHour", "na"),
                                        station.get("winddirectiondegrees",
                                                    "na")))
+        index += 1
 
 
 def changed():
@@ -452,6 +500,21 @@ def getvallist(keystr, size=3):
                 # don't do anything if value = 'na'
                 continue
     return itemlist
+
+
+def datalist_from_csv(key):
+    with open('weatherdata.csv', mode='r', newline='') as weatherfile:
+        csv_reader = csv.reader(weatherfile, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            else:
+                print(
+                    f'\t{row[0]} works in the {row[1]} department, and was born in {row[2]}.')
+                line_count += 1
+        print(f'Processed {line_count} lines.')
 
 
 def is_number(s):
@@ -495,6 +558,7 @@ def main():
 if __name__ == "__main__":
     stations = []
     getweatherdata()
+    writecsv()
     main()
     root = Tk()
     app = Window(root)
