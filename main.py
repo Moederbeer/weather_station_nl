@@ -7,18 +7,7 @@ from tkinter import *
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
-# Implement the default Matplotlib key bindings.
-from matplotlib.backend_bases import key_press_handler
-from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-from matplotlib.transforms import Transform
-from matplotlib.ticker import (
-    AutoLocator, AutoMinorLocator)
-import os.path
-from os import path
-
-import numpy as np
-
 
 class WeatherStation():
     def __init__(self, time, index, jsonid, stationid, stationname, lat, lon,
@@ -69,15 +58,116 @@ class WeatherStation():
         return
 
 
-class Window(Frame):
-    counter = 0
-    selectedstation = 0
-    hottest = []
-    coldest = []
+class WeatherDataFromInternet():
+    def __init__(self):
+        self.stations = []
+        self.itemlist = []
+        self.time = datetime.now()
+
+    def getweatherdata(self):
+        # load json file
+        # jsonraw = urllib.request.urlopen(
+        # "https://data.buienradar.nl/2.0/feed/json")
+        self.jsonraw = open('sample_json')
+        self.weatherdata = json.load(self.jsonraw)["actual"]
+        # create a timestamp
+        self.time = datetime.now()
+        self.timestamp = time.strftime("%b %d %Y %H:%M:%S")
+        # clear data so there is room for fresh data
+        self.stations.clear()
+        self.index = 0
+
+        for self.station in self.weatherdata["stationmeasurements"]:
+            self.stations.append(WeatherStation(self.timestamp,
+                                                self.index,
+                                                self.station.get("$id", "na"),
+                                                self.station.get("stationid", "na"),
+                                                self.station.get("stationname", "na"),
+                                                self.station.get("lat", "na"),
+                                                self.station.get("lon", "na"),
+                                                self.station.get("regio", "na"),
+                                                self.station.get("timestamp", "na"),
+                                                self.station.get("weatherdescription",
+                                                                 "na"),
+                                                self.station.get("winddirection", "na"),
+                                                self.station.get("airpressure", "na"),
+                                                self.station.get("temperature", "na"),
+                                                self.station.get("groundtemperature",
+                                                                 "na"),
+                                                self.station.get("feeltemperature",
+                                                                 "na"),
+                                                self.station.get("visibility", "na"),
+                                                self.station.get("windgusts", "na"),
+                                                self.station.get("windspeed", "na"),
+                                                self.station.get("windspeedBft", "na"),
+                                                self.station.get("humidity", "na"),
+                                                self.station.get("precipitation", "na"),
+                                                self.station.get("sunpower", "na"),
+                                                self.station.get("rainFallLast24Hour",
+                                                                 "na"),
+                                                self.station.get("rainFallLastHour",
+                                                                 "na"),
+                                                self.station.get("winddirectiondegrees",
+                                                                 "na")))
+            self.index += 1
+
+    def gethottest(self):
+        return max(getvallist('temperature'))
+
+    def getcoldest(self):
+        return min(getvallist('temperature'))
+
+    def getsunniest(self):
+        return max(getvallist('sunPower'))
+
+    def getmostwindiest(self):
+        return max(getvallist('windSpeed'))
+
+    def getleastwindiest(self):
+        return min(getvallist('windSpeed'))
+
+    # gets all valid values from keystr with associated index
+    def getvallist(self, keystr, size=3):
+        self.itemlist = []
+        # go through all stations
+        for i in range(0, len(self.stations)):
+            # get keys and values from station
+            for key, val in self.stations[i].__dict__.items():
+                # find desired key from keys
+                if key.__contains__(keystr) and val != 'na':
+                    if size == 1:
+                        if is_number(val):
+                            # append value and id to list if not 'na'
+                            self.itemlist.append(float(val))
+                        else:
+                            self.itemlist.append(val)
+                    elif size == 3:
+                        if is_number(val):
+                            # append value id and name to list if not 'na'
+                            self.itemlist.append([float(val), i, self.stations[
+                                i].__dict__.get("stationName")])
+                        else:
+                            self.itemlist.append([val, i, self.stations[i].__dict__.get(
+                                "stationName")])
+                    else:
+                        if is_number(val):
+                            # append value and id to list if not 'na'
+                            self.itemlist.append([float(val), i])
+                        else:
+                            self.itemlist.append([val, i])
+                else:
+                    # don't do anything if value = 'na'
+                    continue
+        return self.itemlist
+
+
+class WeatherDisplay(Frame, WeatherDataFromInternet):
 
     def __init__(self, master=None):
+        self.weatherdata = WeatherDataFromInternet
         Frame.__init__(self, master)
         self.master = master
+        self.selectedstation = 0
 
         self.callback = None
 
@@ -85,11 +175,11 @@ class Window(Frame):
 
         self.updatetime = 10 * 60 * 1000
 
-        self.coldest = getcoldest()
-        self.hottest = gethottest()
-        self.windiest = getmostwindiest()
-        self.leastwindiest = getleastwindiest()
-        self.sunniest = getsunniest()
+        self.coldest = WeatherDataFromInternet.getcoldest(self)
+        self.hottest = WeatherDataFromInternet.gethottest(self)
+        self.windiest = WeatherDataFromInternet.getmostwindiest(self)
+        self.leastwindiest = WeatherDataFromInternet.getleastwindiest(self)
+        self.sunniest = WeatherDataFromInternet.getsunniest(self)
 
         self.hottestlbl0 = StringVar()
         self.coldestlbl0 = StringVar()
@@ -116,12 +206,6 @@ class Window(Frame):
         self.init_window()
 
     def left_frame_data(self):
-        self.coldest = getcoldest()
-        self.hottest = gethottest()
-        self.windiest = getmostwindiest()
-        self.leastwindiest = getleastwindiest()
-        self.sunniest = getsunniest()
-
         self.coldestlbl0.set(f"Koudste: {self.coldest[0]}°C")
         self.hottestlbl0.set(f"Heetste: {self.hottest[0]}°C")
         self.windiestlbl0.set(f"Max wind: {self.windiest[0]} Km/h")
@@ -145,7 +229,6 @@ class Window(Frame):
         self.windspeedlbl.set(f"{stations[self.selectedstation].windSpeed}")
         self.windgustslbl.set(f"{stations[self.selectedstation].windGusts}")
 
-
     def init_window(self):
         # changing the title of the master window
         self.master.title("Weerstation")
@@ -158,17 +241,13 @@ class Window(Frame):
         left_frame.grid(column=0, row=0, sticky=E+W+N+S)
         left_frame.rowconfigure(1, weight=1)
 
-
-        top_left_frame = Frame(left_frame, width=200,
-                               padx=3, pady=3,
-                               height=200)
+        top_left_frame = Frame(left_frame, width=200, padx=3, pady=3, height=200)
         top_left_frame.grid(column=0, row=0, sticky=E+W+N)
         top_left_frame.columnconfigure(0, weight=1)
 
         mid_left_frame = Frame(left_frame, pady=3, padx=3)
         mid_left_frame.grid(column=0, row=1, stick=E+W)
         mid_left_frame.columnconfigure(0, weight=1)
-
 
         bottom_left_frame = Frame(left_frame, width=200, pady=3,
                                   padx=3)
@@ -273,8 +352,6 @@ class Window(Frame):
         quitbutton = Button(bottom_left_frame, text="Exit", command=self.client_exit)
         # placing the button on my window
         quitbutton.grid(sticky=SW)
-
-
 
         # selected station data
         # weather description, visibility, temperature, air pressure,
@@ -463,10 +540,6 @@ def getweatherdata():
         index += 1
 
 
-def changed():
-    print("changed")
-
-
 # gets all valid values from keystr with associated index
 def getvallist(keystr, size=3):
     itemlist = []
@@ -500,21 +573,6 @@ def getvallist(keystr, size=3):
                 # don't do anything if value = 'na'
                 continue
     return itemlist
-
-
-def datalist_from_csv(key):
-    with open('weatherdata.csv', mode='r', newline='') as weatherfile:
-        csv_reader = csv.reader(weatherfile, delimiter=',')
-        line_count = 0
-        for row in csv_reader:
-            if line_count == 0:
-                print(f'Column names are {", ".join(row)}')
-                line_count += 1
-            else:
-                print(
-                    f'\t{row[0]} works in the {row[1]} department, and was born in {row[2]}.')
-                line_count += 1
-        print(f'Processed {line_count} lines.')
 
 
 def is_number(s):
@@ -557,10 +615,16 @@ def main():
 
 if __name__ == "__main__":
     stations = []
+    weatherstations = WeatherDataFromInternet()
+    weatherstations.getweatherdata()
+    print(weatherstations.__dict__.__getitem__("stations"))
+    weatherdata = weatherstations.__dict__.__getitem__("stations")
+    # print(weatherdata[0].temperature)
+    # print(stations)
     getweatherdata()
     writecsv()
     main()
     root = Tk()
-    app = Window(root)
+    app = WeatherDisplay(root)
     root.geometry('1000x750')
     root.mainloop()
