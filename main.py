@@ -73,7 +73,7 @@ class Window(Frame):
 
         self.callback = None
 
-        self.updatetime = 10 * 1000
+        self.updatetime = 10 * 60 * 1000
 
         self.coldest = getcoldest()
         self.hottest = gethottest()
@@ -144,14 +144,31 @@ class Window(Frame):
         root.grid_columnconfigure(0, weight=0)
         root.grid_columnconfigure(1, weight=1)
 
-        left_frame = Frame(root, bg='cyan', width=200, pady=3)
+        left_frame = Frame(root, width=200)
         left_frame.grid(column=0, row=0, sticky=E+W+N+S)
-        left_frame.columnconfigure(0, minsize=200, weight=0)
+        left_frame.rowconfigure(1, weight=1)
 
-        left_frame.rowconfigure(0, weight=1)
-        left_frame.rowconfigure(16, weight=1)
 
-        right_frame = Frame(root, bg='red', width=450, height=500, pady=3)
+        top_left_frame = Frame(left_frame, width=200,
+                               padx=3, pady=3,
+                               height=200)
+        top_left_frame.grid(column=0, row=0, sticky=E+W+N)
+        top_left_frame.columnconfigure(0, weight=1)
+
+        mid_left_frame = Frame(left_frame, pady=3, padx=3)
+        mid_left_frame.grid(column=0, row=1, stick=E+W)
+        mid_left_frame.columnconfigure(0, weight=1)
+
+
+        bottom_left_frame = Frame(left_frame, width=200, pady=3,
+                                  padx=3)
+        bottom_left_frame.grid(column=0, row=2, sticky=E+W+S)
+        bottom_left_frame.columnconfigure(0, minsize=200, weight=0)
+
+        bottom_left_frame.rowconfigure(0, weight=1)
+        bottom_left_frame.rowconfigure(16, weight=1)
+
+        right_frame = Frame(root, width=450, height=500, pady=3)
         right_frame.rowconfigure(0, weight=1)
         right_frame.grid(column=1, row=0, sticky=E+W+N+S)
         right_frame.columnconfigure(0, weight=1)
@@ -171,19 +188,19 @@ class Window(Frame):
         # set default menuitem
         self.tkvar1.set(stationchoices[0])
         # make a popupmenu
-        popupmenu = OptionMenu(left_frame, self.tkvar1, *stationchoices,
+        stationpu = OptionMenu(top_left_frame, self.tkvar1, *stationchoices,
                                command=self.selected_station)
         # place it in the grid
-        popupmenu.grid(sticky=N+E+W)
+        stationpu.grid(sticky=N+E+W)
 
         self.tkvar2 = StringVar(self.master)
-        timechoices = ["10s", "30s", "60s", "10min"]
+        timechoices = ["10min", "20min", "30min", "60min"]
         self.tkvar2.set(timechoices[0])
         # make a popupmenu
-        popupmenu = OptionMenu(left_frame, self.tkvar2, *timechoices,
+        timerpu = OptionMenu(top_left_frame, self.tkvar2, *timechoices,
                                command=self.selected_timer)
         # place it in the grid
-        popupmenu.grid(sticky=N + E + W)
+        timerpu.grid(sticky=N+E+W)
 
         # show assignment data of other stations
         self.coldestlbl0.set(f"Koudste: {self.coldest[0]}°C")
@@ -198,33 +215,33 @@ class Window(Frame):
         self.leastwindiestlbl1.set(self.leastwindiest[2])
         self.sunniestlbl1.set(self.sunniest[2])
 
-        Label(left_frame, textvariable=self.coldestlbl0, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.coldestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, textvariable=self.coldestlbl1, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.coldestlbl1, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text="").grid(sticky=EW)
+        Label(mid_left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, textvariable=self.hottestlbl0, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.hottestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, textvariable=self.hottestlbl1, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.hottestlbl1, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text="").grid(sticky=EW)
+        Label(mid_left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, textvariable=self.windiestlbl0, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.windiestlbl0, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, textvariable=self.windiestlbl1, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.windiestlbl1, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text="").grid(sticky=EW)
+        Label(mid_left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, textvariable=self.leastwindiestlbl0,
+        Label(mid_left_frame, textvariable=self.leastwindiestlbl0,
               anchor=W).grid(sticky=EW)
-        Label(left_frame, textvariable=self.leastwindiestlbl1, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.leastwindiestlbl1, anchor=W).grid(
             sticky=EW)
-        Label(left_frame, text="").grid(sticky=EW)
+        Label(mid_left_frame, text="").grid(sticky=EW)
 
-        Label(left_frame, textvariable=self.sunniestlbl0,
+        Label(mid_left_frame, textvariable=self.sunniestlbl0,
               anchor=W).grid(sticky=EW)
-        Label(left_frame, textvariable=self.sunniestlbl1, anchor=W).grid(
+        Label(mid_left_frame, textvariable=self.sunniestlbl1, anchor=W).grid(
             sticky=EW)
 
         # Label(root, textvariable=self.test).grid(sticky=EW)
@@ -232,7 +249,7 @@ class Window(Frame):
         # self.test.set("hoi")
 
         # creating a button instance
-        quitbutton = Button(left_frame, text="Exit", command=self.client_exit)
+        quitbutton = Button(bottom_left_frame, text="Exit", command=self.client_exit)
         # placing the button on my window
         quitbutton.grid(sticky=SW)
 
@@ -335,14 +352,14 @@ class Window(Frame):
         # cancel te last timer because a new interval is set
         root.after_cancel(self.callback)
         # compare input to needed output
-        if value == "10s":
-            self.updatetime = 10 * 1000
-        elif value == "30s":
-            self.updatetime = 30 * 1000
-        elif value == "60s":
-            self.updatetime = 60 * 1000
-        elif value == "10min":
+        if value == "10min":
             self.updatetime = 10 * 60 * 1000
+        elif value == "20min":
+            self.updatetime = 20 * 60 * 1000
+        elif value == "30min":
+            self.updatetime = 30 * 60 * 1000
+        elif value == "60min":
+            self.updatetime = 60 * 60 * 1000
         # run the onupdate function with new interval
         self.onupdate()
 
