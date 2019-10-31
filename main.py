@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from tkinter import *
 from tkinter import messagebox
+from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 import matplotlib.pyplot as plt
@@ -59,6 +60,14 @@ class WeatherDataFiles:
         else:
             return
 
+    def open_station_csv(self):
+        # get a filename from a dialog
+        filename = filedialog.askopenfilename(initialdir="/", title='Bestand selecteren',
+                                          filetypes=(("CSV file", "*.csv"),))
+        # draw graph with this data
+        self.draw_graph(filename)
+        return
+
 
 class WeatherStation(WeatherDataFiles):
     # simple class containing all data from a single weatherstation
@@ -106,6 +115,7 @@ class WeatherDataFromInternet:
     def getweatherdata(self):
         # load json file
         self.jsonraw = urllib.request.urlopen("https://data.buienradar.nl/2.0/feed/json")
+        # self.jsonraw = open('sample_json')
         self.weatherdata = json.load(self.jsonraw)["actual"]
         # create a timestamp
         self.time = datetime.today().strftime("%d/%m/%Y - %H:%M:%S")
@@ -346,8 +356,6 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         self.canvas = FigureCanvasTkAgg(fig, master=right_frame)
         # place the figure on the grid
         self.canvas.get_tk_widget().grid(column=0, row=0, columnspan=9)
-        # draw the graph in a function so it's able to update later
-        self.draw_graph()
 
         # create list of all stationsstations
         self.tkvar1 = StringVar(self.master)
@@ -364,9 +372,9 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         # create another popupmenu for setting the time interval
         # make some choices
         self.tkvar2 = StringVar(self.master)
-        timechoices = ["10min", "20min", "30min", "60min"]
+        timechoices = ["10sec", "1min", "5min", "10min", "20min", "30min", "60min"]
         # set the default one
-        self.tkvar2.set(timechoices[0])
+        self.tkvar2.set(timechoices[3])
         # make a popupmenu which executes selected_timer when changed
         timerpu = OptionMenu(top_left_frame, self.tkvar2, *timechoices, command=self.selected_timer)
         # place it in the grid
@@ -431,6 +439,7 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         # create the file object
         file = Menu(menu, tearoff=False)
         # add all options to the file menu and link their commands
+        file.add_command(label="Open CSV", command=self.open_station_csv)
         file.add_command(label="Verwijder CSV", command=self.delete_csv)
         file.add_command(label="Exit", command=self.client_exit)
         # added "file" to our menu
@@ -449,34 +458,63 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         root.after_cancel(self.callback)
         exit()
 
-    def draw_graph(self):
+    def draw_graph(self, filename=None):
         # clear the current graph and it's variables
         self.ax[0].clear()
         self.ax[1].clear()
         temperatures = []
         pressures = []
         timestamps = []
-        # open the weatherdata file
-        with open('weatherdata.csv', 'r') as weatherfile:
-            # create a reader object with settings
-            reader = csv.reader(weatherfile,    delimiter=';',
-                                                quotechar='"',
-                                                quoting=csv.QUOTE_MINIMAL)
-            # got through all rows in the csv file
-            for row in reader:
-                # check if it's our selected station
-                if int(row[1]) == self.selectedstation:
-                    # convert timestamp to date object and add to list
-                    timestamps.append(datetime.strptime(row[0], "%d/%m/%Y - %H:%M:%S"))
-                    # check if values from this row are numbers or 'na' and append either value or 0
-                    if self.is_number(row[2]):
-                        temperatures.append(float(row[2]))
-                    else:
-                        temperatures.append(0)
-                    if self.is_number(row[3]):
-                        pressures.append(float(row[3]))
-                    else:
-                        pressures.append(0)
+        if filename:
+            # catch if data isn't in the correct format
+            try:
+                with open(filename, 'r') as weatherfile:
+                    reader = csv.reader(weatherfile, delimiter=';',
+                                        quotechar='"',
+                                        quoting=csv.QUOTE_MINIMAL)
+                    for row in reader:
+                        timestamps.append(datetime.strptime(row[0], "%d/%m/%Y - %H:%M:%S"))
+                        # check if values from this row are numbers or 'na' and append either value or 0
+                        if self.is_number(row[2]):
+                            temperatures.append(float(row[2]))
+                        else:
+                            temperatures.append(0)
+                        if self.is_number(row[3]):
+                            pressures.append(float(row[3]))
+                        else:
+                            pressures.append(0)
+                # find stationname to display above plot
+                plt.title("Opgeslagen data van: " + self.stations[int(row[1])].stationName)
+                # cancel update timer so we can display static data
+                root.after_cancel(self.callback)
+            except:
+                messagebox.showerror('Fout', 'Ongeldige data!')
+                return
+
+        else:
+            # open the weatherdata file
+            with open('weatherdata.csv', 'r') as weatherfile:
+                # create a reader object with settings
+                reader = csv.reader(weatherfile,    delimiter=';',
+                                                    quotechar='"',
+                                                    quoting=csv.QUOTE_MINIMAL)
+                # got through all rows in the csv file
+                for row in reader:
+                    # check if it's our selected station
+                    if int(row[1]) == self.selectedstation:
+                        # convert timestamp to date object and add to list
+                        timestamps.append(datetime.strptime(row[0], "%d/%m/%Y - %H:%M:%S"))
+                        # check if values from this row are numbers or 'na' and append either value or 0
+                        if self.is_number(row[2]):
+                            temperatures.append(float(row[2]))
+                        else:
+                            temperatures.append(0)
+                        if self.is_number(row[3]):
+                            pressures.append(float(row[3]))
+                        else:
+                            pressures.append(0)
+                # set plot title to match data
+                plt.title(self.stations[self.selectedstation].stationName)
 
         # set color, labels, axisdata and ticks of top plot
         color = 'tab:red'
@@ -528,10 +566,16 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         self.draw_graph()
 
     def selected_timer(self, value):
-        # cancel te last timer because a new interval is set
+        # cancel the last timer because a new interval is set
         root.after_cancel(self.callback)
         # compare input to needed output
-        if value == "10min":
+        if value == "10sec":
+            self.updatetime = 10 * 1000
+        elif value == "1min":
+            self.updatetime = 1 * 60 * 1000
+        elif value == "5min":
+            self.updatetime = 5 * 60 * 1000
+        elif value == "10min":
             self.updatetime = 10 * 60 * 1000
         elif value == "20min":
             self.updatetime = 20 * 60 * 1000
@@ -543,7 +587,6 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         self.onupdate()
 
     def onupdate(self):
-        # update displayed time
         try:
             # check if weatherdata.csv is writeable
             open('weatherdata.csv', 'a')
