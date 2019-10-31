@@ -345,7 +345,7 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         # create a canvas which houses the figure
         self.canvas = FigureCanvasTkAgg(fig, master=right_frame)
         # place the figure on the grid
-        self.canvas.get_tk_widget().grid(column=0, row=0, columnspan=8)
+        self.canvas.get_tk_widget().grid(column=0, row=0, columnspan=9)
         # draw the graph in a function so it's able to update later
         self.draw_graph()
 
