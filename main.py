@@ -256,6 +256,11 @@ class WeatherDisplay(Frame, WeatherDataFromInternet, WeatherDataFiles):
         self.windspeedlbl = StringVar()
         self.windgustslbl = StringVar()
 
+        # check if weatherdata.csv exists and create if not
+        if not os.path.isfile('weatherdata.csv'):
+            # create a new blank file
+            open('weatherdata.csv', 'w')
+
         self.init_window()
 
     def left_frame_data(self):
