@@ -115,6 +115,7 @@ class WeatherDataFromInternet:
     def getweatherdata(self):
         # load json file
         self.jsonraw = urllib.request.urlopen("https://data.buienradar.nl/2.0/feed/json")
+        # uncomment to use sample json file
         # self.jsonraw = open('sample_json')
         self.weatherdata = json.load(self.jsonraw)["actual"]
         # create a timestamp
